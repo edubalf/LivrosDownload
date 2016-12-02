@@ -4,6 +4,16 @@ var http = require('http');
 var fs = require('fs');
 
 var lastPage;
+var countRunDownloads = 0;
+
+var downloadAllBooks = function () {
+    try {
+        download.queue('http://lelivros.top/book/page/1');
+    }
+    catch (e) {
+        console.log('Erro consulta ultima pagina');
+    }
+}
 
 var download = new Crawler({
     maxConnections: 1,
@@ -14,15 +24,18 @@ var download = new Crawler({
             .split('/')[5];
 
         for (var i = 1; i < lastPage; i++) {
-            pagina.queue('http://lelivros.top/book/page/' + i);
+            try {
+                pages.queue('http://lelivros.top/book/page/' + i);
+            }
+            catch (e) {
+                console.log('Erro na pagina ' + i + '\n' + e);
+            }
         }
     }
 });
 
-var countRunDownloads = 0;
-
-var pagina = new Crawler({
-    maxConnections: 10,
+var pages = new Crawler({
+    maxConnections: 1,
     callback: function (error, result, $) {
 
         if (error) {
@@ -31,14 +44,20 @@ var pagina = new Crawler({
         else {
             $('.product > a').each(function (index, a) {
                 if (index % 2 == 0) {
-                    livro.queue($(a).attr('href'));
+
+                    try {
+                        books.queue($(a).attr('href'));
+                    }
+                    catch (e) {
+                        console.log('Erro com um livro ' + e);
+                    }
                 }
             });
         }
     }
 });
 
-var livro = new Crawler({
+var books = new Crawler({
     maxConnections: 10,
     callback: function (error, result, $) {
         if (error) {
@@ -51,17 +70,15 @@ var livro = new Crawler({
                     var link = $(a).attr('href')
                         .replace(new RegExp(' ', 'g'), '%20');
 
-                    var nome = $('.product_title').text()
+                    var name = $('.product_title').text()
                         .replace(new RegExp(' ', 'g'), '_')
                         .replace(/[^\w\s]/gi, '');
 
-                    var file = fs.createWriteStream("livros/" + nome + ".pdf");
+                    var file = fs.createWriteStream("livros/" + name + ".pdf");
                     var request = http.get(link, function (response) {
                         response.pipe(file);
                         file.on('finish', function () {
                             file.close(function () {
-                                //console.log(nome + ' - terminou download');
-
                                 countRunDownloads++;
                                 console.log('Baixados ' + countRunDownloads + ' de ' + lastPage + 16 + ' livros');
                             });
@@ -73,8 +90,4 @@ var livro = new Crawler({
     }
 });
 
-var downloadAllBooks = function () {
-    download.queue('http://lelivros.top/book/page/1');
-}
-
-module.exports.downloadAllBooks = downloadAllBooks; 
+module.exports.downloadAllBooks = downloadAllBooks;
