@@ -1,6 +1,6 @@
 # LivrosDownload
 
-Realiza o download de todos os livros do site [lelivros](lelivros.top)
+Realiza o download de todos os livros do site [lelivros](http://lelivros.top)
 
 ## Instalar
 
